@@ -29,12 +29,18 @@ class nginx::service(
     unless      => "/usr/bin/test ! -f ${nginx::params::nx_temp_dir}/nginx.mail.d/*",
     subscribe   => File["${nginx::params::nx_temp_dir}/nginx.mail.d"],
   }
+  exec { 'rebuild-nginx-passengerhosts':
+    command     => "/bin/cat ${nginx::params::nx_temp_dir}/nginx.passenger.d/* > ${nginx::params::nx_conf_dir}/conf.passenger.d/vhost_autogen.conf",
+    refreshonly => true,
+    unless      => "/usr/bin/test ! -f ${nginx::params::nx_temp_dir}/nginx.passenger.d/*",
+    subscribe   => File["${nginx::params::nx_temp_dir}/nginx.passenger.d"],
+  }
   service { 'nginx':
     ensure     => running,
     enable     => true,
     hasstatus  => true,
     hasrestart => true,
-    subscribe  => Exec['rebuild-nginx-vhosts', 'rebuild-nginx-mailhosts'],
+    subscribe  => Exec['rebuild-nginx-vhosts', 'rebuild-nginx-mailhosts', 'rebuild-nginx-passengerhosts'],
   }
   if $configtest_enable == true {
     Service['nginx'] {

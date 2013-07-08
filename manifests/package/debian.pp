@@ -16,35 +16,38 @@
 class nginx::package::debian {
   $operatingsystem_lowercase = inline_template('<%= operatingsystem.downcase %>')
 
+  anchor { 'nginx::apt_repo' : }
+
+  if $::nginx::passenger == true and $::operatingsystem == 'Ubuntu' {
+    apt::ppa { 'ppa:brightbox/passenger-nginx': }
+    $nx_package = 'nginx-extras'
+  } elsif $::nginx::passenger == true and $::operatingsystem == 'Debian' {
+    apt::source { 'dotdeb':
+      ensure     => present,
+      location   => 'http://packages.dotdeb.org',
+      release    => $::lsbdistcodename,
+      repos      => 'all',
+      key_server => 'keys.gnupg.net',
+      key        => '89DF5277'
+    }
+    $nx_package = 'nginx-extras'
+  } else {
+    apt::source { 'nginx':
+      ensure     => present,
+      location   => "http://nginx.org/packages/${operatingsystem_lowercase}/",
+      release    => $::lsbdistcodename,
+      repos      => 'nginx',
+      key        => '7BD9BF62',
+      key_source => 'http://nginx.org/keys/nginx_signing.key',
+      before     => Anchor['nginx::apt_repo']
+    }
+    $nx_package = 'nginx'
+  }
+
   package { 'nginx':
+    name    => $nx_package,
     ensure  => present,
     require => Anchor['nginx::apt_repo'],
   }
 
-  anchor { 'nginx::apt_repo' : }
-
-  file { '/etc/apt/sources.list.d/nginx.list':
-    ensure  => present,
-    content => "deb http://nginx.org/packages/${operatingsystem_lowercase}/ ${::lsbdistcodename} nginx
-                deb-src http://nginx.org/packages/${operatingsystem_lowercase}/ ${::lsbdistcodename} nginx
-               ",
-    mode    => '0444',
-    require => Exec['add_nginx_apt_key'],
-    before  => Anchor['nginx::apt_repo'],
-  }
-
-  exec { 'add_nginx_apt_key':
-    command   => '/usr/bin/wget http://nginx.org/keys/nginx_signing.key -O - | /usr/bin/apt-key add -',
-    unless    => '/usr/bin/apt-key list | /bin/grep -q nginx',
-    before    => Anchor['nginx::apt_repo'],
-  }
-
-  exec { 'apt_get_update_for_nginx':
-    command     => '/usr/bin/apt-get update',
-    timeout     => 240,
-    returns     => [ 0, 100 ],
-    refreshonly => true,
-    subscribe   => File['/etc/apt/sources.list.d/nginx.list'],
-    before      => Anchor['nginx::apt_repo'],
-  }
 }

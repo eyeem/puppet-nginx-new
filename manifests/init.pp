@@ -42,7 +42,8 @@ class nginx (
   $configtest_enable      = $nginx::params::nx_configtest_enable,
   $service_restart        = $nginx::params::nx_service_restart,
   $mail                   = $nginx::params::nx_mail,
-  $server_tokens          = $nginx::params::nx_server_tokens
+  $server_tokens          = $nginx::params::nx_server_tokens,
+  $passenger              = $nginx::params::nx_passenger
 ) inherits nginx::params {
 
   include stdlib
