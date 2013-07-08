@@ -11,10 +11,14 @@ server {
   location / {
     auth_basic "<%= @auth_basic %>";
     auth_basic_user_file <%= @auth_basic_user_file %>;
+    passenger_enabled     on;
+    root                  <%= root %>;
+    rack_env              <%= rack_env %>;
   }
 
-<% end -%>
+<% else -%>
   passenger_enabled     on;
   root                  <%= root %>;
   rack_env              <%= rack_env %>;
+<% end -%>
 }
